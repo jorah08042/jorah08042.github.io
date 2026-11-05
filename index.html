@@ -1,192 +1,1217 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="Academic Webpage" />
-    <meta name="author" content="yixin0313" />
-    <title id="title"></title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Happy Birthday</title>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    color:#fff;
+    background:
+      radial-gradient(ellipse 80% 55% at 50% 112%, rgba(96,48,168,.85) 0%, transparent 62%),
+      radial-gradient(ellipse 55% 45% at 12% 8%, rgba(58,38,140,.55) 0%, transparent 58%),
+      linear-gradient(180deg,#07051c 0%,#100a2e 40%,#160d3d 72%,#08061f 100%);
+  }
+  button{font-family:inherit;}
 
-    <!-- Icon -->
-    <link rel="icon" type="image/x-icon" href="static/assets/favicon.ico" />
+  /* ================= 一、入口层：转盘锁 ================= */
+  #gate{
+    position:fixed; inset:0; z-index:100;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    background:radial-gradient(circle at 50% 42%,#12102b 0%,#06050f 58%,#020106 100%);
+    transition:opacity .9s ease, visibility .9s;
+  }
+  #gate.fade{opacity:0; visibility:hidden;}
 
-    <!-- Bootstrap icons-->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+  .lock-wrap{
+    display:flex; flex-direction:column; align-items:center;
+    gap:16px;
+    opacity:1;
+    transition:opacity .45s ease;
+  }
+  .lock-wrap.shake{animation:lockShake .45s ease;}
+  @keyframes lockShake{
+    0%,100%{transform:translateX(0);}
+    15%{transform:translateX(-9px);}
+    35%{transform:translateX(9px);}
+    55%{transform:translateX(-6px);}
+    75%{transform:translateX(6px);}
+  }
 
-    <!-- Google fonts-->
-    <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,600;1,600&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,300;0,500;0,600;0,700;1,300;1,500;1,600;1,700&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;1,400&amp;display=swap"
-        rel="stylesheet" />
+  .lock-title{
+    font-size:11px; letter-spacing:.36em; text-transform:uppercase;
+    color:#9a8ac9; margin:0;
+  }
 
-    <!-- Core theme CSS (includes Bootstrap)-->
-    <link type="text/css" href="static/css/styles.css" rel="stylesheet" />
-    <link type="text/css" href="static/css/main.css" rel="stylesheet" />
+  .digit-display{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:clamp(34px,9vw,44px);
+    font-weight:700;
+    line-height:1;
+    height:1.15em;
+    color:#fff;
+    text-shadow:0 0 30px rgba(180,140,255,.75), 0 0 60px rgba(150,110,255,.35);
+    transition:color .3s;
+  }
 
-    <!-- Bootstrap core JS-->
-    <script type="text/javascript" src="static/js/bootstrap.bundle.min.js"></script>
+  #dial{
+    display:block;
+    touch-action:none;
+    cursor:grab;
+    user-select:none;
+    -webkit-user-select:none;
+    filter:drop-shadow(0 22px 46px rgba(90,50,180,.4));
+  }
+  #dial:active{cursor:grabbing;}
 
-    <!-- For Compatability -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  .leds{
+    display:flex; gap:9px; margin-top:2px;
+  }
+  .led{
+    width:clamp(30px,8vw,36px);
+    height:clamp(36px,9.6vw,44px);
+    border-radius:9px;
+    border:1px solid rgba(160,140,220,.32);
+    background:rgba(58,44,108,.32);
+    display:flex; align-items:center; justify-content:center;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:clamp(16px,4.4vw,20px);
+    font-weight:700;
+    color:#eafff6;
+    transition:all .28s ease;
+  }
+  .led::after{
+    content:"·";
+    font-size:20px;
+    color:rgba(165,150,210,.45);
+    line-height:1;
+  }
+  .led.on{
+    background:linear-gradient(160deg,rgba(155,115,255,.7),rgba(92,62,180,.6));
+    border-color:rgba(205,178,255,.85);
+    box-shadow:0 0 18px rgba(150,110,255,.55),
+               inset 0 1px 0 rgba(255,255,255,.32);
+  }
+  .led.on::after{content:none;}
+  .led.err{
+    border-color:#ff6b8a;
+    box-shadow:0 0 18px rgba(255,107,138,.55);
+    color:#ff9db2;
+  }
 
-    <!-- Markdown -->
-    <script type="text/javascript" src="static/js/marked.min.js"></script>
+  .lock-hint{
+    min-height:1.5em;
+    max-width:340px;
+    text-align:center;
+    font-size:12.5px;
+    line-height:1.5;
+    color:#ff7d99;
+    transition:color .3s;
+  }
+  .lock-tip{
+    font-size:11.5px;
+    color:#7d70a8;
+    letter-spacing:.05em;
+    margin:0;
+  }
 
-    <!-- Mathematics -->
-    <script>
-        // See https://docs.mathjax.org/en/latest/index.html for more details.
-        MathJax = {
-            tex: {
-                packages: {},              // extensions to use
-                inlineMath: [              // start/end delimiter pairs for in-line math
-                    ['$', '$'],
-                    ['\\(', '\\)']
-                ],
-                displayMath: [             // start/end delimiter pairs for display math
-                    ['$$', '$$'],
-                    ['\\[', '\\]']
-                ],
-                processEscapes: false,      // use \$ to produce a literal dollar sign
-                processEnvironments: true, // process \begin{xxx}...\end{xxx} outside math mode
-                processRefs: true,         // process \ref{...} outside of math mode
-                digits: /^(?:[0-9]+(?:\{,\}[0-9]{3})*(?:\.[0-9]*)?|\.[0-9]+)/,    // pattern for recognizing numbers
-                tags: 'all',              // or 'ams' or 'all'
-                tagSide: 'right',          // side for \tag macros
-                tagIndent: '0.8em',        // amount to indent tags
-                useLabelIds: true,         // use label name rather than tag for ids
-                maxMacros: 10000,          // maximum number of macro substitutions per expression
-                maxBuffer: 5 * 1024,       // maximum size for the internal TeX string (5K)
-                // baseURL:                   // URL for use with links to tags (when there is a <base> tag in effect)
-                // (document.getElementsByTagName('base').length === 0) ? '' : String(document.location).replace(/#.*$/, ''),
-                formatError:               // function called when TeX syntax errors occur
-                    (jax, err) => jax.formatError(err)
-            }
-        };
-    </script>
-    <script type="text/javascript" id="MathJax-script"
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  /* Access granted 打字机 */
+  .granted{
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:clamp(17px,5vw,23px);
+    letter-spacing:.05em;
+    color:#7bf1c0;
+    text-shadow:0 0 26px rgba(120,240,190,.65);
+    opacity:0;
+    transition:opacity .45s ease;
+    pointer-events:none;
+    white-space:nowrap;
+  }
+  .granted.show{opacity:1;}
 
-    <!-- Core JS-->
-    <script type="text/javascript" src="static/js/scripts.js"></script>
-    <script type="text/javascript" src="static/js/js-yaml.min.js"></script>
+  /* ================= 星空 ================= */
+  #stars{
+    position:fixed; inset:0; width:100%; height:100%;
+    display:block; z-index:1; pointer-events:none;
+  }
 
+  /* ================= 二、主页面 ================= */
+  #main{
+    position:fixed; inset:0; z-index:2;
+    overflow-y:auto; overflow-x:hidden;
+    opacity:0; transition:opacity 1.6s ease;
+    background:transparent;
+  }
+  #main.show{opacity:1;}
+
+  .stage{
+    position:relative;
+    min-height:100%;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:44px 16px 60px;
+    text-align:center;
+  }
+
+  .sub{
+    margin:0 0 10px;
+    font-size:12px; letter-spacing:.34em; text-transform:uppercase;
+    color:#a495d8; opacity:.9;
+  }
+
+  h1{
+    margin:0 0 4px;
+    font-size:clamp(30px,7.6vw,56px);
+    font-weight:800; letter-spacing:.03em; line-height:1.15;
+    background:linear-gradient(90deg,#ffd6f2,#ffffff,#c7b3ff,#8fd3ff,#ffd6f2);
+    background-size:300% 100%;
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent;
+    filter:drop-shadow(0 0 26px rgba(190,140,255,.45));
+  }
+  @keyframes shimmer{to{background-position:300% 0;}}
+  @keyframes rise{
+    from{opacity:0; transform:translateY(20px);}
+    to{opacity:1; transform:none;}
+  }
+  #main.show .sub{animation:rise .9s .15s both;}
+  #main.show h1{animation:rise .9s .32s both, shimmer 7s linear infinite;}
+  #main.show .cake{animation:rise 1s .55s both;}
+  #main.show .tips{animation:rise .9s .8s both;}
+
+  /* ---------- 蛋糕 ---------- */
+  .cake{
+    position:relative;
+    width:340px; height:300px;
+    margin-top:16px;
+    filter:drop-shadow(0 26px 46px rgba(120,60,220,.38));
+  }
+  .tier{position:absolute; left:50%; transform:translateX(-50%);}
+  .tier-bottom{
+    width:282px; height:86px; bottom:26px;
+    border-radius:14px 14px 10px 10px;
+    background:linear-gradient(180deg,#ffd3e6 0%,#f8a9ce 52%,#e788b8 100%);
+    box-shadow:inset 0 -12px 20px rgba(160,60,120,.28),
+               inset 0 9px 0 rgba(255,255,255,.55),
+               0 4px 0 rgba(0,0,0,.15);
+  }
+  .tier-bottom::before{
+    content:""; position:absolute; left:-7px; right:-7px; top:-13px; height:24px;
+    background:radial-gradient(circle 11px at 11px 11px, #ffd3e6 10px, transparent 11px) repeat-x;
+    background-size:26px 24px;
+  }
+  .tier-top{
+    width:202px; height:64px; bottom:112px;
+    border-radius:12px 12px 8px 8px;
+    background:linear-gradient(180deg,#fff4f9 0%,#ffd9ec 58%,#ffc2dd 100%);
+    box-shadow:inset 0 -10px 16px rgba(200,120,170,.22),
+               inset 0 9px 0 rgba(255,255,255,.85);
+  }
+  .tier-top::after{
+    content:""; position:absolute; left:-6px; right:-6px; bottom:-15px; height:24px;
+    background:radial-gradient(circle 10px at 10px 0px, #ffc2dd 9px, transparent 10px) repeat-x;
+    background-size:24px 24px;
+  }
+  .plate{
+    position:absolute; left:50%; transform:translateX(-50%);
+    bottom:8px; width:326px; height:16px; border-radius:50%;
+    background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(160,130,255,.06));
+    filter:blur(.4px);
+  }
+
+  /* ---------- 蜡烛 ---------- */
+  .candles{
+    position:absolute; left:50%; transform:translateX(-50%);
+    bottom:170px;
+    display:flex; align-items:flex-end; gap:26px;
+    z-index:3;
+  }
+  .candle{position:relative; width:14px; height:62px; cursor:pointer; touch-action:manipulation;}
+  .stick{
+    position:absolute; inset:0; border-radius:7px;
+    box-shadow:inset -3px 0 6px rgba(0,0,0,.20),
+               inset 3px 0 5px rgba(255,255,255,.35),
+               0 2px 8px rgba(0,0,0,.28);
+  }
+  .wick{
+    position:absolute; left:50%; top:-7px; transform:translateX(-50%);
+    width:2px; height:10px; border-radius:1px; background:#3b2b1e;
+  }
+  .flame{
+    position:absolute; left:50%; top:-36px;
+    width:16px; height:28px;
+    transform:translateX(-50%);
+    transform-origin:50% 100%;
+    border-radius:50% 50% 50% 50% / 62% 62% 38% 38%;
+    background:radial-gradient(ellipse at 50% 76%,#fffdf0 0%,#ffe479 34%,#ffab34 66%,#ff6a1e 100%);
+    box-shadow:0 0 22px 6px rgba(255,160,60,.55),
+               0 0 52px 18px rgba(255,110,40,.20);
+    animation:flick .34s ease-in-out infinite alternate;
+    transition:opacity .45s ease, transform .45s ease, box-shadow .45s ease;
+  }
+  .flame::after{
+    content:""; position:absolute; left:50%; bottom:5px;
+    width:6px; height:11px; transform:translateX(-50%);
+    border-radius:50%; background:#fffbe8; filter:blur(1.2px); opacity:.92;
+  }
+  @keyframes flick{
+    from{transform:translateX(-50%) scale(1,1) rotate(-3deg); opacity:.92;}
+    to{transform:translateX(-50%) scale(1.1,.93) rotate(3deg); opacity:1;}
+  }
+  .candle.out .flame{
+    animation:none; opacity:0;
+    transform:translateX(-50%) scale(.12) translateY(-10px);
+    box-shadow:none;
+  }
+  .smoke{
+    position:absolute; left:50%; top:-34px;
+    width:8px; height:8px; border-radius:50%;
+    background:rgba(228,228,255,.55); filter:blur(3px);
+    opacity:0; transform:translateX(-50%);
+  }
+  .smoke::before,.smoke::after{
+    content:""; position:absolute; left:0; top:0; width:100%; height:100%;
+    border-radius:50%; background:rgba(228,228,255,.42); filter:blur(3px); opacity:0;
+  }
+  .candle.out .smoke{animation:puff 2.4s ease-out forwards;}
+  .candle.out .smoke::before{animation:puffChild 2.8s ease-out .30s forwards;}
+  .candle.out .smoke::after{animation:puffChild 3.2s ease-out .62s forwards;}
+  @keyframes puff{
+    0%{opacity:.85; transform:translate(-50%,0) scale(.5);}
+    70%{opacity:.3;}
+    100%{opacity:0; transform:translate(-50%,-112px) scale(2.6);}
+  }
+  @keyframes puffChild{
+    0%{opacity:.7; transform:scale(.4) translate(0,0);}
+    100%{opacity:0; transform:scale(2.2) translate(16px,-96px);}
+  }
+
+  /* ---------- 操作提示 ---------- */
+  .tips{
+    margin-top:28px;
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+    padding:0 8px;
+  }
+  .tip{
+    font-size:12.5px; color:#bcaee8;
+    padding:8px 15px; border-radius:999px;
+    border:1px solid rgba(180,150,255,.26);
+    background:rgba(120,90,220,.13);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    white-space:nowrap;
+  }
+  #micBtn{
+    cursor:pointer; color:#bcaee8;
+    transition:all .25s ease; outline:none;
+    touch-action:manipulation;
+  }
+  #micBtn:hover{background:rgba(160,120,255,.26); border-color:rgba(200,170,255,.6); color:#fff;}
+  #micBtn.active{border-color:#7bf1c0; color:#7bf1c0; box-shadow:0 0 20px rgba(120,240,190,.35);}
+  #micBtn:disabled{opacity:.55; cursor:not-allowed;}
+
+  /* ---------- 彩带 ---------- */
+  #fx{
+    position:fixed; inset:0; width:100%; height:100%;
+    display:block; z-index:3; pointer-events:none;
+  }
+
+  /* ---------- 最终祝福 ---------- */
+  .final{
+    position:fixed; inset:0; z-index:4;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    background:rgba(6,4,18,.74);
+    backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+    opacity:0; visibility:hidden;
+    transition:opacity .8s ease, visibility .8s;
+  }
+  .final.show{opacity:1; visibility:visible;}
+  .card{
+    width:100%; max-width:440px;
+    padding:44px 30px 38px;
+    border-radius:26px;
+    text-align:center;
+    background:linear-gradient(160deg,rgba(66,44,120,.92),rgba(28,19,58,.95));
+    border:1px solid rgba(190,160,255,.30);
+    box-shadow:0 34px 90px rgba(0,0,0,.65),
+               inset 0 1px 0 rgba(255,255,255,.12);
+    transform:translateY(26px) scale(.95);
+    transition:transform .85s cubic-bezier(.2,.9,.3,1.25);
+  }
+  .final.show .card{transform:translateY(0) scale(1);}
+  .card .emoji{font-size:48px; line-height:1; margin-bottom:14px;}
+  .card h2{
+    margin:0 0 14px; font-size:26px; letter-spacing:.02em;
+    background:linear-gradient(90deg,#ffd6f2,#fff,#c7b3ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .card p{margin:0 0 8px; font-size:15px; line-height:2; color:#cfc2f2;}
+  .card .sign{margin-top:18px; font-size:13px; color:#9a8ac4; letter-spacing:.08em;}
+  .again{
+    margin-top:26px; padding:11px 30px;
+    font-size:14px; color:#fff; cursor:pointer;
+    border-radius:999px; border:1px solid rgba(200,170,255,.45);
+    background:linear-gradient(135deg,rgba(150,110,255,.55),rgba(255,120,200,.45));
+    transition:all .25s ease;
+  }
+  .again:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(150,110,255,.45);}
+  .again:active{transform:translateY(0) scale(.97);}
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width:400px){
+    .cake{transform:scale(.84); margin:-16px 0 -6px;}
+    .tips{gap:8px;}
+    .tip{font-size:11.5px; padding:7px 12px;}
+  }
+  @media (max-height:640px){
+    .cake{transform:scale(.82); margin:-20px 0;}
+    .lock-wrap{gap:10px;}
+  }
+</style>
 </head>
+<body>
 
-<body id="page-top">
-    <!-- Navigation-->
-    <nav class="header navbar navbar-expand-lg navbar-light fixed-top shadow-sm" id="mainNav">
-        <div class="container px-5">
-            <a id="page-top-title" class="navbar-brand fw-bold" href="#page-top"></a>
-            <!-- <a href="#page-top"><img src="static/assets/img/CUMT_LOGO.svg" style="width: 11rem;"></a> -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
-                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-                MENU
-                <i class="bi-list"></i>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarResponsive">
-                <ul class="navbar-nav ms-auto me-4 my-3 my-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link me-lg-3" href="#home">HOME</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link me-lg-3" href="#awards">AWARDS</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link me-lg-3" href="#experience">EXPERIENCE</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link me-lg-3" href="#publications">PUBLICATIONS</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<!-- ================= 一、入口层：转盘锁 ================= -->
+<div id="gate">
+  <div class="lock-wrap" id="lockWrap">
+    <p class="lock-title">Birthday Lock</p>
+    <div class="digit-display" id="digitDisplay">0</div>
+    <canvas id="dial"></canvas>
+    <div class="leds" id="leds"></div>
+    <p class="lock-hint" id="lockHint"></p>
+    <p class="lock-tip">拖动转盘选数字 · 点击中心确认</p>
+  </div>
+  <div class="granted" id="granted"><span id="grantedText"></span></div>
+</div>
 
-    <!-- Top Section -->
-    <section class="top-section" style="background-image: url('static/assets/img/background.jpeg');">
-        <div class="top-section-content">
-            <div class="container px-5">
-                <h2 id="top-section-bg-text" class="text-white display-3 lh-1 font-alt"></h2>
-            </div>
-        </div>
-    </section>
-    <!-- Top Section -->
+<!-- ================= 星空 ================= -->
+<canvas id="stars"></canvas>
 
-    <!-- Photo -->
-    <div class="container px-5">
-        <div id="avatar">
-            <img class="shadow" src="static/assets/img/photo.png">
-        </div>
+<!-- ================= 二、主页面 ================= -->
+<main id="main">
+  <div class="stage">
+    <p class="sub">A little something for you</p>
+    <h1>Happy Birthday</h1>
+
+    <div class="cake">
+      <div class="candles"></div>
+      <div class="tier tier-top"></div>
+      <div class="tier tier-bottom"></div>
+      <div class="plate"></div>
     </div>
-    <!-- Photo -->
 
-    <!-- Home -->
-    <section class="bg-gradient-primary-to-secondary-light mt5 md5" id="home">
-        <div class="container px-5">
-            <header>
-                <h2 id="home-subtitle"> </h2>
-                <!-- <span class="bi bi-list"></span> -->
-            </header>
-            <div class="main-body" id="home-md"></div>
-        </div>
-    </section>
-    <!-- Home -->
+    <div class="tips">
+      <span class="tip">点一下 / 划过蜡烛</span>
+      <span class="tip">按住空格连吹</span>
+      <button class="tip" id="micBtn">🎤 对着麦克风吹气</button>
+    </div>
+  </div>
+</main>
 
-    <!-- Awards -->
-    <section class="bg-gradient-primary-to-secondary-light mt5 md5" id="awards">
-        <div class="container px-5">
-            <header>
-                <h2 id="awards-subtitle"><i class="bi bi-award-fill"></i>AWARDS </h2>
-            </header>
-            <div class="main-body" id="awards-md"></div>
+<!-- ================= 彩带 ================= -->
+<canvas id="fx"></canvas>
 
-        </div>
-    </section>
-    <!-- Awards -->
+<!-- ================= 最终祝福 ================= -->
+<div class="final" id="final">
+  <div class="card">
+    <div class="emoji">🎂</div>
+    <h2>生日快乐！</h2>
+    <p>蜡烛吹灭的那一刻，<br>所有愿望都开始生效了。</p>
+    <p>愿你想要的都拥有，<br>得不到的都释怀。</p>
+    <p class="sign">—— 来自一直在的人</p>
+    <button class="again" onclick="location.reload()">再来一次</button>
+  </div>
+</div>
 
-    <!-- Experience -->
-    <section class="bg-gradient-primary-to-secondary-dark mt5 md5" id="experience">
-        <div class="container px-5">
-            <header>
-                <h2 id="experience-subtitle"><i class="bi bi-briefcase-fill"></i> EXPERIENCE </h2>
-            </header>
-            <div class="main-body" id="experience-md"></div>
-        </div>
-    </section>
-    <!-- Experience -->
+<script>
+/* =========================================================
+   配置区
+   ========================================================= */
+const CONFIG = {
+  PASSWORD: '991109',
+  HINTS: [
+    '✗ 密码错误。提示：年份后两位 + 月 + 日。',
+    '✗ 还不是。想想 1999 年那个冬天。',
+    '✗ 冷静，六位数字，月份和日期都是两位。'
+  ]
+};
 
-    <!-- Publications -->
-    <section class="bg-gradient-primary-to-secondary-gray mt5 md5" id="publications">
-        <div class="container px-5">
-            <header>
-                <h2 id="publications-subtitle"><i class="bi bi-file-text-fill"></i>&nbsp;PUBLICATIONS</h2>
-            </header>
-            <div class="main-body" id="publications-md"></div>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        </div>
-    </section>
-    <!-- Publications  -->
+function typeInto(el, text, speed = 62){
+  return new Promise(resolve => {
+    let i = 0;
+    (function step(){
+      if (i <= text.length){
+        el.textContent = text.slice(0, i);
+        i++;
+        setTimeout(step, speed);
+      } else resolve();
+    })();
+  });
+}
 
-    <!-- Footer-->
-    <footer class="bg-bottom text-center py-5">
-        <div class="container px-5">
-            <div class="text-white-50 small">
-                <div id="copyright-text" class="mb-2"></div>
-                <a id="github-link" href="https://github.com/senli1073">Github</a>
-                <span class="mx-1">&middot;</span>
-                <a id="license-link"
-                    href="https://github.com/senli1073/senli1073.github.io/blob/main/LICENSE">License</a>
-            </div>
-        </div>
-    </footer>
+/* =========================================================
+   音效（Web Audio 合成）
+   ========================================================= */
+let audioCtx = null;
 
+function getAC(){
+  if (!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function tickSound(){
+  const ac = getAC(); if (!ac) return;
+  try{
+    const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'square';
+    o.frequency.value = 1700 + Math.random() * 500;
+    g.gain.setValueAtTime(0.055, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.04);
+  }catch(e){}
+}
+
+function confirmSound(){
+  const ac = getAC(); if (!ac) return;
+  try{
+    const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, t);
+    o.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.24);
+  }catch(e){}
+}
+
+function failSound(){
+  const ac = getAC(); if (!ac) return;
+  try{
+    const t = ac.currentTime;
+    [0, 0.12].forEach((off, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(180 - i * 40, t + off);
+      o.frequency.exponentialRampToValueAtTime(80 - i * 20, t + off + 0.14);
+      g.gain.setValueAtTime(0.0001, t + off);
+      g.gain.exponentialRampToValueAtTime(0.09, t + off + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.16);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t + off); o.stop(t + off + 0.18);
+    });
+  }catch(e){}
+}
+
+function playUnlockSound(){
+  const ac = getAC(); if (!ac) return;
+  try{
+    const t = ac.currentTime;
+
+    for (let i = 0; i < 3; i++){
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'square';
+      o.frequency.value = 320 + i * 140;
+      const tt = t + i * 0.09;
+      g.gain.setValueAtTime(0.07, tt);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.055);
+      o.connect(g); g.connect(ac.destination);
+      o.start(tt); o.stop(tt + 0.06);
+    }
+
+    const o2 = ac.createOscillator(), g2 = ac.createGain();
+    o2.type = 'sine';
+    o2.frequency.setValueAtTime(420, t + 0.3);
+    o2.frequency.exponentialRampToValueAtTime(1180, t + 0.95);
+    g2.gain.setValueAtTime(0.0001, t + 0.3);
+    g2.gain.exponentialRampToValueAtTime(0.11, t + 0.36);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 1.15);
+    o2.connect(g2); g2.connect(ac.destination);
+    o2.start(t + 0.3); o2.stop(t + 1.2);
+  }catch(e){}
+}
+
+/* =========================================================
+   转盘锁
+   ========================================================= */
+const gateEl      = document.getElementById('gate');
+const lockWrap    = document.getElementById('lockWrap');
+const dial        = document.getElementById('dial');
+const dctx        = dial.getContext('2d');
+const digitDisplay= document.getElementById('digitDisplay');
+const ledsEl      = document.getElementById('leds');
+const lockHint    = document.getElementById('lockHint');
+const granted     = document.getElementById('granted');
+const grantedText = document.getElementById('grantedText');
+
+let SIZE = 0;          // canvas CSS 尺寸
+let btnR = 40;         // 中心按钮半径（CSS px）
+let rotation = 0;      // 转盘旋转角度（度）
+let dragging = false;
+let lastAngle = 0;
+let lastDigit = null;
+let animToken = 0;
+let centerPressed = false;
+
+let entered = [];
+let locked = false;    // 验证中 / 解锁中锁定输入
+let hintIdx = 0;
+let unlocked = false;  // 是否已进入主页面（用于空格守卫）
+
+/* ---------- 6 个 LED ---------- */
+for (let i = 0; i < 6; i++){
+  const d = document.createElement('div');
+  d.className = 'led';
+  ledsEl.appendChild(d);
+}
+const leds = Array.from(ledsEl.children);
+
+function updateLEDs(){
+  leds.forEach((el, i) => {
+    if (i < entered.length){
+      el.textContent = entered[i];
+      el.classList.add('on');
+    } else {
+      el.textContent = '';
+      el.classList.remove('on');
+    }
+  });
+}
+
+/* ---------- 当前指向的数字 ---------- */
+function currentDigit(){
+  return ((Math.round(-rotation / 36) % 10) + 10) % 10;
+}
+
+function checkTick(){
+  const d = currentDigit();
+  if (d !== lastDigit){
+    lastDigit = d;
+    digitDisplay.textContent = d;
+    tickSound();
+  }
+}
+
+/* ---------- 尺寸 ---------- */
+function sizeDial(){
+  const cssSize = Math.min(340, Math.max(240, window.innerWidth * 0.78));
+  SIZE = cssSize;
+  dial.style.width  = cssSize + 'px';
+  dial.style.height = cssSize + 'px';
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  dial.width  = Math.round(cssSize * dpr);
+  dial.height = Math.round(cssSize * dpr);
+  dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  drawDial();
+}
+
+/* ---------- 绘制 ---------- */
+function drawDial(){
+  if (!SIZE) return;
+
+  const ctx = dctx;
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const R  = SIZE / 2 - 20;
+
+  ctx.clearRect(0, 0, SIZE, SIZE);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  /* ===== 旋转层 ===== */
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation * Math.PI / 180);
+
+  // 金属外环
+  const ringG = ctx.createLinearGradient(-R, -R, R, R);
+  ringG.addColorStop(0,    '#453b74');
+  ringG.addColorStop(0.35, '#221c3e');
+  ringG.addColorStop(0.62, '#4d4289');
+  ringG.addColorStop(1,    '#171229');
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.fillStyle = ringG; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(0, 0, R - 1, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(190,170,255,.22)';
+  ctx.lineWidth = 1.5; ctx.stroke();
+
+  // 刻度
+  for (let deg = 0; deg < 360; deg += 3.6){
+    const major = Math.abs(deg % 36) < 0.01;
+    const a  = (deg - 90) * Math.PI / 180;
+    const r1 = R - 6;
+    const r2 = r1 - (major ? 17 : 8);
+
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+    ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+    ctx.strokeStyle = major ? 'rgba(205,185,255,.8)' : 'rgba(150,130,205,.3)';
+    ctx.lineWidth   = major ? 2.4 : 1.1;
+    ctx.stroke();
+  }
+
+  // 数字
+  const activeDigit = currentDigit();
+  for (let i = 0; i < 10; i++){
+    const a = (i * 36 - 90) * Math.PI / 180;
+    const active = (i === activeDigit);
+
+    ctx.save();
+    ctx.rotate(a + Math.PI / 2);
+    ctx.translate(0, -(R - 42));
+
+    if (active){
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#b6a4ff';
+      ctx.shadowBlur = 20;
+      ctx.font = '700 ' + Math.round(SIZE * 0.072) + 'px ui-monospace, Menlo, monospace';
+    } else {
+      ctx.fillStyle = 'rgba(185,170,225,.5)';
+      ctx.font = '600 ' + Math.round(SIZE * 0.062) + 'px ui-monospace, Menlo, monospace';
+    }
+    ctx.fillText(String(i), 0, 0);
+    ctx.restore();
+  }
+
+  // 内盘
+  const innerR = R - 74;
+  const inG = ctx.createRadialGradient(0, -innerR * 0.45, innerR * 0.08, 0, 0, innerR);
+  inG.addColorStop(0,    '#322b5e');
+  inG.addColorStop(0.65, '#1b1636');
+  inG.addColorStop(1,    '#100c22');
+  ctx.beginPath(); ctx.arc(0, 0, innerR, 0, Math.PI * 2);
+  ctx.fillStyle = inG; ctx.fill();
+  ctx.strokeStyle = 'rgba(150,130,210,.22)';
+  ctx.lineWidth = 1; ctx.stroke();
+
+  ctx.restore();
+  /* ===== 旋转层结束 ===== */
+
+  // 指针
+  ctx.beginPath();
+  ctx.moveTo(cx, 17);
+  ctx.lineTo(cx - 9, 1);
+  ctx.lineTo(cx + 9, 1);
+  ctx.closePath();
+  ctx.fillStyle = '#ff7ac6';
+  ctx.shadowColor = '#ff7ac6';
+  ctx.shadowBlur = 14;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // 中心确认按钮
+  btnR = R * 0.30;
+  const bg = ctx.createRadialGradient(
+    cx, cy - btnR * 0.35, btnR * 0.15,
+    cx, cy, btnR
+  );
+  bg.addColorStop(0, centerPressed ? '#8271d8' : '#5d50aa');
+  bg.addColorStop(0.55, '#2f2757');
+  bg.addColorStop(1, '#181332');
+
+  ctx.beginPath(); ctx.arc(cx, cy, btnR, 0, Math.PI * 2);
+  ctx.fillStyle = bg; ctx.fill();
+  ctx.strokeStyle = 'rgba(200,175,255,.5)';
+  ctx.lineWidth = 1.6; ctx.stroke();
+
+  ctx.fillStyle = centerPressed ? '#ffffff' : 'rgba(228,214,255,.92)';
+  ctx.font = '600 ' + Math.round(SIZE * 0.043) + 'px -apple-system, "PingFang SC", sans-serif';
+  ctx.fillText('确认', cx, cy - SIZE * 0.012);
+
+  ctx.fillStyle = 'rgba(165,148,215,.62)';
+  ctx.font = '400 ' + Math.round(SIZE * 0.028) + 'px ui-monospace, Menlo, monospace';
+  ctx.fillText('ENTER', cx, cy + SIZE * 0.05);
+}
+
+/* ---------- 旋转动画 ---------- */
+function animateRotation(target, dur, onDone){
+  const my = ++animToken;
+  const start = rotation;
+  const t0 = performance.now();
+
+  function step(t){
+    if (my !== animToken) return;
+    const k = Math.min(1, (t - t0) / dur);
+    const e = 1 - Math.pow(1 - k, 3);
+    rotation = start + (target - start) * e;
+    drawDial();
+    checkTick();
+    if (k < 1){
+      requestAnimationFrame(step);
+    } else {
+      rotation = target;
+      drawDial();
+      checkTick();
+      if (onDone) onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+/* ---------- 拖动 ---------- */
+function pointerPos(e){
+  const r = dial.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+dial.addEventListener('pointerdown', e => {
+  if (locked) return;
+  e.preventDefault();
+  getAC();                                   // 用户手势内激活音频
+
+  const p  = pointerPos(e);
+  const dx = p.x - SIZE / 2;
+  const dy = p.y - SIZE / 2;
+
+  // 点在中心按钮 → 确认
+  if (Math.hypot(dx, dy) < btnR){
+    centerPressed = true;
+    drawDial();
+    setTimeout(() => { centerPressed = false; drawDial(); }, 130);
+    confirmDigit();
+    return;
+  }
+
+  dragging  = true;
+  lastAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+  animToken++;                               // 取消进行中的吸附动画
+  try { dial.setPointerCapture(e.pointerId); } catch(err){}
+});
+
+dial.addEventListener('pointermove', e => {
+  if (!dragging || locked) return;
+  const p = pointerPos(e);
+  const a = Math.atan2(p.y - SIZE / 2, p.x - SIZE / 2) * 180 / Math.PI;
+
+  let d = a - lastAngle;
+  if (d >  180) d -= 360;
+  if (d < -180) d += 360;
+
+  rotation += d;
+  lastAngle = a;
+
+  drawDial();
+  checkTick();
+});
+
+function endDrag(){
+  if (!dragging) return;
+  dragging = false;
+  const target = Math.round(rotation / 36) * 36;
+  animateRotation(target, 220);
+}
+
+dial.addEventListener('pointerup', endDrag);
+dial.addEventListener('pointercancel', endDrag);
+
+/* ---------- 确认一位 ---------- */
+function confirmDigit(){
+  if (locked || entered.length >= 6) return;
+
+  const d = currentDigit();
+  entered.push(d);
+  updateLEDs();
+  confirmSound();
+
+  if (entered.length === 6){
+    locked = true;
+    setTimeout(verify, 380);
+  }
+}
+
+/* ---------- 验证 ---------- */
+function verify(){
+  if (entered.join('') === CONFIG.PASSWORD){
+    unlock();
+  } else {
+    fail();
+  }
+}
+
+function fail(){
+  lockHint.textContent = CONFIG.HINTS[hintIdx % CONFIG.HINTS.length];
+  hintIdx++;
+
+  lockWrap.classList.add('shake');
+  leds.forEach(l => l.classList.add('err'));
+  failSound();
+
+  setTimeout(() => {
+    lockWrap.classList.remove('shake');
+    leds.forEach(l => l.classList.remove('err'));
+    entered = [];
+    updateLEDs();
+    locked = false;
+  }, 950);
+}
+
+/* ---------- 解锁 ---------- */
+async function unlock(){
+  unlocked = true;
+  lockHint.textContent = '';
+
+  // 转盘飞转
+  await new Promise(res => animateRotation(rotation + 1080, 900, res));
+
+  playUnlockSound();
+  await sleep(260);
+
+  lockWrap.style.opacity = '0';
+  await sleep(430);
+
+  granted.classList.add('show');
+  await typeInto(grantedText, 'Access granted.', 55);
+  await sleep(650);
+
+  gateEl.classList.add('fade');
+  document.getElementById('main').classList.add('show');
+  setTimeout(() => gateEl.remove(), 1100);
+}
+
+/* ---------- 初始化 ---------- */
+sizeDial();
+lastDigit = currentDigit();
+digitDisplay.textContent = lastDigit;
+updateLEDs();
+
+window.addEventListener('resize', () => {
+  sizeDial();
+});
+
+/* =========================================================
+   星空 Canvas
+   ========================================================= */
+const starCanvas = document.getElementById('stars');
+const sctx = starCanvas.getContext('2d');
+let SW = 0, SH = 0, stars = [], starT = 0;
+
+function sizeStars(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  SW = starCanvas.clientWidth  || window.innerWidth;
+  SH = starCanvas.clientHeight || window.innerHeight;
+  starCanvas.width  = Math.round(SW * dpr);
+  starCanvas.height = Math.round(SH * dpr);
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildStars();
+}
+
+function buildStars(){
+  const count = Math.max(90, Math.min(210, Math.round(SW * SH / 6600)));
+  stars = [];
+  for (let i = 0; i < count; i++){
+    stars.push({
+      x: Math.random() * SW,
+      y: Math.random() * SH,
+      r: Math.random() * 1.3 + 0.35,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.5 + Math.random() * 1.7,
+      drift: 0.02 + Math.random() * 0.06,
+      warm: Math.random() < 0.22
+    });
+  }
+}
+
+function starLoop(){
+  starT += 0.016;
+  sctx.clearRect(0, 0, SW, SH);
+
+  for (let i = 0; i < stars.length; i++){
+    const s = stars[i];
+    const twinkle = 0.5 + 0.5 * Math.sin(starT * s.speed + s.phase);
+    const alpha = 0.14 + 0.86 * twinkle;
+    const rgb = s.warm ? '255,214,236' : '255,255,255';
+
+    sctx.fillStyle = 'rgba(' + rgb + ',' + alpha + ')';
+    sctx.beginPath();
+    sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    sctx.fill();
+
+    if (s.r > 1.05){
+      sctx.fillStyle = 'rgba(' + rgb + ',' + (alpha * 0.13) + ')';
+      sctx.beginPath();
+      sctx.arc(s.x, s.y, s.r * 4.2, 0, Math.PI * 2);
+      sctx.fill();
+    }
+
+    s.y -= s.drift;
+    if (s.y < -6){ s.y = SH + 6; s.x = Math.random() * SW; }
+  }
+  requestAnimationFrame(starLoop);
+}
+
+sizeStars();
+starLoop();
+
+/* =========================================================
+   蜡烛生成
+   ========================================================= */
+const CANDLE_COUNT = 5;
+const CANDLE_COLORS = ['#ff8fb1', '#8fd3ff', '#b6a4ff', '#ffd166', '#7ef0c0'];
+const candleRow = document.querySelector('.candles');
+
+for (let i = 0; i < CANDLE_COUNT; i++){
+  const c = document.createElement('div');
+  c.className = 'candle';
+
+  const stick = document.createElement('div');
+  stick.className = 'stick';
+  stick.style.background =
+    'repeating-linear-gradient(45deg,' + CANDLE_COLORS[i] + ' 0 6px,#fff 6px 12px)';
+
+  const wick  = document.createElement('div'); wick.className  = 'wick';
+  const flame = document.createElement('div'); flame.className = 'flame';
+  const smoke = document.createElement('div'); smoke.className = 'smoke';
+
+  c.appendChild(stick);
+  c.appendChild(wick);
+  c.appendChild(flame);
+  c.appendChild(smoke);
+  candleRow.appendChild(c);
+}
+
+const candles = Array.from(document.querySelectorAll('.candle'));
+let outCount = 0;
+let allOut   = false;
+
+function blowOut(el){
+  if (!el || el.classList.contains('out')) return;
+  el.classList.add('out');
+  outCount++;
+  if (outCount >= candles.length && !allOut){
+    allOut = true;
+    setTimeout(celebrate, 480);
+  }
+}
+
+function blowNext(){
+  const target = candles.find(c => !c.classList.contains('out'));
+  if (target) blowOut(target);
+  else { clearInterval(spaceTimer); spaceTimer = null; }
+}
+
+/* 方式 1：鼠标 / 触摸 */
+candles.forEach(c => {
+  c.addEventListener('pointerenter', () => blowOut(c));
+  c.addEventListener('click', e => { e.stopPropagation(); blowOut(c); });
+});
+
+/* 方式 2：按住空格（未解锁时不响应） */
+let spaceTimer = null;
+
+window.addEventListener('keydown', e => {
+  if (e.code !== 'Space') return;
+  if (!unlocked) return;
+  e.preventDefault();
+  if (spaceTimer || allOut) return;
+
+  blowNext();
+  spaceTimer = setInterval(blowNext, 290);
+});
+
+window.addEventListener('keyup', e => {
+  if (e.code !== 'Space') return;
+  clearInterval(spaceTimer);
+  spaceTimer = null;
+});
+
+/* 方式 3：麦克风吹气 */
+const micBtn = document.getElementById('micBtn');
+let micStream = null;
+let micCooldown = 0;
+
+micBtn.addEventListener('click', async () => {
+  if (micStream) return;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    micBtn.textContent = '🎤 浏览器不支持，点蜡烛吧';
+    micBtn.disabled = true;
+    return;
+  }
+
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ac = new AudioCtx();
+    if (ac.state === 'suspended') await ac.resume();
+
+    const source   = ac.createMediaStreamSource(micStream);
+    const analyser = ac.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.6;
+    source.connect(analyser);
+
+    const buf = new Uint8Array(analyser.fftSize);
+
+    micBtn.classList.add('active');
+    micBtn.textContent = '🎤 正在听… 吹气！';
+
+    let baseNoise = 0.012;
+    let frames = 0;
+
+    (function listen(){
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++){
+        const v = (buf[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / buf.length);
+
+      if (frames < 30){
+        baseNoise = Math.max(baseNoise, rms);
+        frames++;
+      } else {
+        const threshold = Math.max(0.055, baseNoise * 3.2);
+        const now = performance.now();
+        if (rms > threshold && now - micCooldown > 130){
+          micCooldown = now;
+          blowNext();
+        }
+      }
+      requestAnimationFrame(listen);
+    })();
+
+  } catch (err){
+    micBtn.classList.remove('active');
+    micBtn.textContent = '🎤 麦克风被拒绝，点蜡烛吧';
+    micBtn.disabled = true;
+  }
+});
+
+/* =========================================================
+   撒花
+   ========================================================= */
+const fx = document.getElementById('fx');
+const fctx = fx.getContext('2d');
+let FW = 0, FH = 0;
+let pieces = [];
+let fxRunning = false;
+
+function sizeFx(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  FW = fx.clientWidth  || window.innerWidth;
+  FH = fx.clientHeight || window.innerHeight;
+  fx.width  = Math.round(FW * dpr);
+  fx.height = Math.round(FH * dpr);
+  fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+sizeFx();
+
+const CONFETTI_COLORS = ['#ff7ac6','#ffd166','#7bf1c0','#8fd3ff','#b6a4ff','#ffffff','#ff8fb1'];
+
+function confettiBurst(){
+  if (!FW) sizeFx();
+  for (let i = 0; i < 220; i++){
+    pieces.push({
+      x: Math.random() * FW,
+      y: -20 - Math.random() * FH * 0.6,
+      vx: (Math.random() - 0.5) * 2.6,
+      vy: 1 + Math.random() * 3.2,
+      w: 5 + Math.random() * 6,
+      h: 8 + Math.random() * 10,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.26,
+      color: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
+      seed: Math.random() * 120
+    });
+  }
+  if (!fxRunning){ fxRunning = true; requestAnimationFrame(fxLoop); }
+}
+
+function fxLoop(){
+  fctx.clearRect(0, 0, FW, FH);
+  for (let i = pieces.length - 1; i >= 0; i--){
+    const p = pieces[i];
+    p.vy += 0.09;
+    p.vx *= 0.995;
+    p.x += p.vx + Math.sin((p.y + p.seed) / 30) * 0.85;
+    p.y += p.vy;
+    p.rot += p.vrot;
+
+    fctx.save();
+    fctx.translate(p.x, p.y);
+    fctx.rotate(p.rot);
+    fctx.globalAlpha = 0.95;
+    fctx.fillStyle = p.color;
+    fctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot)));
+    fctx.restore();
+
+    if (p.y > FH + 50) pieces.splice(i, 1);
+  }
+  if (pieces.length) requestAnimationFrame(fxLoop);
+  else { fxRunning = false; fctx.clearRect(0, 0, FW, FH); }
+}
+
+/* =========================================================
+   庆祝
+   ========================================================= */
+const finalEl = document.getElementById('final');
+
+function playChime(){
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ac = new AudioCtx();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, i) => {
+      const t = ac.currentTime + i * 0.13;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.62);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(t);
+      osc.stop(t + 0.66);
+    });
+  } catch(e){}
+}
+
+function celebrate(){
+  confettiBurst();
+  playChime();
+  setTimeout(() => finalEl.classList.add('show'), 900);
+}
+
+/* =========================================================
+   自适应
+   ========================================================= */
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    sizeStars();
+    sizeFx();
+    sizeDial();
+  }, 180);
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { sizeStars(); sizeFx(); sizeDial(); }, 320);
+});
+</script>
 </body>
-
 </html>
