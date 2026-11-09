@@ -69,9 +69,7 @@
   }
   #dial:active{cursor:grabbing;}
 
-  .leds{
-    display:flex; gap:9px; margin-top:2px;
-  }
+  .leds{display:flex; gap:9px; margin-top:2px;}
   .led{
     width:clamp(30px,8vw,36px);
     height:clamp(36px,9.6vw,44px);
@@ -120,7 +118,6 @@
     margin:0;
   }
 
-  /* Access granted 打字机 */
   .granted{
     position:absolute; left:50%; top:50%;
     transform:translate(-50%,-50%);
@@ -150,9 +147,133 @@
     background:transparent;
   }
   #main.show{opacity:1;}
+  #main.locked-scroll{overflow:hidden;}
 
+  /* ---------- 白昼天空 ---------- */
+  #skyBg{
+    position:fixed; inset:0; z-index:0;
+    background:linear-gradient(180deg,#bfe0ff 0%,#e3f1ff 42%,#fbf4ff 100%);
+    opacity:1;
+    transition:opacity 1.5s ease, visibility 1.5s;
+    pointer-events:none;
+  }
+  #skyBg.gone{opacity:0; visibility:hidden;}
+
+  /* ---------- 云层（在可收集元素前面） ---------- */
+  #cloudLayer{
+    position:fixed; inset:0; z-index:6;
+    overflow:hidden;
+    pointer-events:none;
+    transition:opacity 1.3s ease, visibility 1.3s;
+  }
+  #cloudLayer.gone{opacity:0; visibility:hidden;}
+
+  .cloud{
+    position:absolute; left:0;
+    width:150px; height:52px;
+    background:#fff; border-radius:100px;
+    box-shadow:
+      30px -23px 0 5px #fff,
+      70px -14px 0 0 #fff,
+      -30px -14px 0 2px #fff;
+    filter:blur(.4px);
+    opacity:.9;
+    animation:drift linear infinite;
+    will-change:transform;
+  }
+  @keyframes drift{
+    from{ transform:translateX(-35vw) scale(var(--s,1)); }
+    to  { transform:translateX(130vw) scale(var(--s,1)); }
+  }
+
+  /* ---------- 可收集元素（数字 & 单词） ---------- */
+  .collectible{
+    position:fixed;
+    z-index:3;
+    font-weight:900;
+    line-height:1;
+    cursor:pointer;
+    user-select:none;
+    -webkit-user-select:none;
+
+    /* 与 Happy Birthday 标题一致的白昼渐变（始终不变） */
+    background:linear-gradient(90deg,#7c5cff,#ff6fb5,#4fa8ff,#7c5cff);
+    background-size:300% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    color:transparent;
+    text-shadow:0 4px 18px rgba(110,80,200,.22);
+
+    /* 居中定位用 transform，漂移与摇摆用 translate / rotate 属性 */
+    transform:translate(-50%,-50%) scale(1);
+
+    animation:
+      shimmer 7s linear infinite,
+      wander 26s ease-in-out infinite,
+      sway 13s ease-in-out infinite;
+
+    transition:left .95s cubic-bezier(.33,0,.2,1),
+               top .95s cubic-bezier(.33,0,.2,1),
+               transform .95s cubic-bezier(.33,0,.2,1);
+    will-change:left, top, transform, translate, rotate;
+    touch-action:manipulation;
+  }
+  .collectible.num{
+    font-size:clamp(58px,13vw,104px);
+  }
+  .collectible.word{
+    font-size:clamp(38px,9vw,62px);
+    letter-spacing:.02em;
+  }
+  .collectible span{
+    display:inline-block;
+    animation:numFloat 5.6s ease-in-out infinite;
+  }
+
+  /* 初始位置：分散飘浮在蛋糕两侧的天空中，避开标题 */
+  #num2{ left:17%; top:46%; animation-duration:7s, 26s, 13s; }
+  #num7{ left:83%; top:52%; animation-duration:7s, 31s, 17s; animation-delay:0s, -8s, -4s; }
+  #wordHaley{ left:50%; top:72%; animation-duration:7s, 23s, 11s; animation-delay:0s, -14s, -2s; }
+
+  #num2 span{ animation-delay:-1.8s; }
+  #num7 span{ animation-delay:-0.6s; }
+  #wordHaley span{ animation-delay:-3.2s; }
+
+  @keyframes shimmer{ to{ background-position:300% 0; } }
+
+  /* 大范围缓慢漂移，像云一样四处游走 */
+  @keyframes wander{
+    0%   { translate: 0px 0px; }
+    25%  { translate: -52px -20px; }
+    50%  { translate: 30px 24px; }
+    75%  { translate: -22px -28px; }
+    100% { translate: 0px 0px; }
+  }
+  /* 轻微摇摆旋转 */
+  @keyframes sway{
+    0%,100% { rotate: -7deg; }
+    50%     { rotate: 8deg; }
+  }
+  @keyframes numFloat{
+    0%,100%{ transform:translate(0,0) rotate(-4deg); }
+    30%{ transform:translate(14px,-16px) rotate(3deg); }
+    65%{ transform:translate(-10px,8px) rotate(-2deg); }
+  }
+
+  /* 已收集：保留渐变流光，但停止漂移与旋转 */
+  .collectible.caught{
+    cursor:default;
+    animation:shimmer 7s linear infinite;
+    translate:0 0;
+    rotate:0deg;
+  }
+  .collectible.caught span{ animation:none; }
+
+  /* ---------- 舞台 ---------- */
   .stage{
     position:relative;
+    z-index:2;
     min-height:100%;
     display:flex; flex-direction:column;
     align-items:center; justify-content:center;
@@ -164,6 +285,7 @@
     margin:0 0 10px;
     font-size:12px; letter-spacing:.34em; text-transform:uppercase;
     color:#a495d8; opacity:.9;
+    transition:color .8s ease;
   }
 
   h1{
@@ -175,8 +297,19 @@
     -webkit-background-clip:text; background-clip:text;
     color:transparent;
     filter:drop-shadow(0 0 26px rgba(190,140,255,.45));
+    animation:shimmer 7s linear infinite;
   }
-  @keyframes shimmer{to{background-position:300% 0;}}
+
+  /* 白昼标题配色 */
+  #main.day h1{
+    background:linear-gradient(90deg,#7c5cff,#ff6fb5,#4fa8ff,#7c5cff);
+    background-size:300% 100%;
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent;
+    filter:drop-shadow(0 3px 14px rgba(120,90,220,.22));
+  }
+  #main.day .sub{color:#7e6fb0;}
+
   @keyframes rise{
     from{opacity:0; transform:translateY(20px);}
     to{opacity:1; transform:none;}
@@ -253,7 +386,8 @@
     background:radial-gradient(ellipse at 50% 76%,#fffdf0 0%,#ffe479 34%,#ffab34 66%,#ff6a1e 100%);
     box-shadow:0 0 22px 6px rgba(255,160,60,.55),
                0 0 52px 18px rgba(255,110,40,.20);
-    animation:flick .34s ease-in-out infinite alternate;
+    animation:flick .34s ease-in-out infinite alternate,
+              ignite .6s ease-out;
     transition:opacity .45s ease, transform .45s ease, box-shadow .45s ease;
   }
   .flame::after{
@@ -265,6 +399,17 @@
     from{transform:translateX(-50%) scale(1,1) rotate(-3deg); opacity:.92;}
     to{transform:translateX(-50%) scale(1.1,.93) rotate(3deg); opacity:1;}
   }
+  @keyframes ignite{
+    0%{opacity:0; transform:translateX(-50%) scale(.2,.35);}
+    100%{opacity:1; transform:translateX(-50%) scale(1,1);}
+  }
+
+  .candle.no-flame .flame{
+    visibility:hidden;
+    animation:none;
+    box-shadow:none;
+  }
+
   .candle.out .flame{
     animation:none; opacity:0;
     transform:translateX(-50%) scale(.12) translateY(-10px);
@@ -299,6 +444,15 @@
     display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
     padding:0 8px;
   }
+  .tips.game-hidden{visibility:hidden;}
+  .tips.reveal{
+    animation:tipsIn 1s cubic-bezier(.2,.8,.3,1) both !important;
+  }
+  @keyframes tipsIn{
+    from{opacity:0; transform:translateY(12px);}
+    to{opacity:1; transform:none;}
+  }
+
   .tip{
     font-size:12.5px; color:#bcaee8;
     padding:8px 15px; border-radius:999px;
@@ -324,7 +478,7 @@
 
   /* ---------- 最终祝福 ---------- */
   .final{
-    position:fixed; inset:0; z-index:4;
+    position:fixed; inset:0; z-index:10;
     display:flex; align-items:center; justify-content:center;
     padding:20px;
     background:rgba(6,4,18,.74);
@@ -369,6 +523,11 @@
     .cake{transform:scale(.84); margin:-16px 0 -6px;}
     .tips{gap:8px;}
     .tip{font-size:11.5px; padding:7px 12px;}
+    .collectible.num{font-size:clamp(52px,15vw,72px);}
+    .collectible.word{font-size:clamp(34px,11vw,50px);}
+    #num2{left:15%; top:44%;}
+    #num7{left:85%; top:50%;}
+    #wordHaley{left:50%; top:70%;}
   }
   @media (max-height:640px){
     .cake{transform:scale(.82); margin:-20px 0;}
@@ -395,7 +554,31 @@
 <canvas id="stars"></canvas>
 
 <!-- ================= 二、主页面 ================= -->
-<main id="main">
+<main id="main" class="day locked-scroll">
+  <!-- 白昼天空 -->
+  <div id="skyBg"></div>
+
+  <!-- 云层：数量更多、尺寸更大，覆盖在可收集元素前面 -->
+  <div id="cloudLayer" aria-hidden="true">
+    <div class="cloud" style="top:4%;  --s:1.6; animation-duration:74s;  animation-delay:-18s; opacity:.95;"></div>
+    <div class="cloud" style="top:13%; --s:1.1; animation-duration:58s;  animation-delay:-44s; opacity:.85;"></div>
+    <div class="cloud" style="top:22%; --s:1.9; animation-duration:92s;  animation-delay:-30s; opacity:.9;"></div>
+    <div class="cloud" style="top:31%; --s:1.3; animation-duration:66s;  animation-delay:-8s;  opacity:.8;"></div>
+    <div class="cloud" style="top:40%; --s:1.7; animation-duration:84s;  animation-delay:-60s; opacity:.85;"></div>
+    <div class="cloud" style="top:48%; --s:1.0; animation-duration:50s;  animation-delay:-24s; opacity:.75;"></div>
+    <div class="cloud" style="top:56%; --s:1.5; animation-duration:78s;  animation-delay:-70s; opacity:.8;"></div>
+    <div class="cloud" style="top:64%; --s:1.2; animation-duration:60s;  animation-delay:-14s; opacity:.75;"></div>
+    <div class="cloud" style="top:72%; --s:1.8; animation-duration:88s;  animation-delay:-50s; opacity:.7;"></div>
+    <div class="cloud" style="top:80%; --s:1.1; animation-duration:56s;  animation-delay:-36s; opacity:.65;"></div>
+    <div class="cloud" style="top:88%; --s:1.4; animation-duration:70s;  animation-delay:-6s;  opacity:.6;"></div>
+    <div class="cloud" style="top:47%; --s:2.0; animation-duration:100s; animation-delay:-82s; opacity:.55;"></div>
+  </div>
+
+  <!-- 需要收集：数字 2、7 和单词 Haley（始终白昼样式） -->
+  <div class="collectible num" id="num2" data-num="2"><span>2</span></div>
+  <div class="collectible num" id="num7" data-num="7"><span>7</span></div>
+  <div class="collectible word" id="wordHaley" data-word="Haley"><span>Haley</span></div>
+
   <div class="stage">
     <p class="sub">A little something for you</p>
     <h1>Happy Birthday</h1>
@@ -407,7 +590,7 @@
       <div class="plate"></div>
     </div>
 
-    <div class="tips">
+    <div class="tips game-hidden">
       <span class="tip">点一下 / 划过蜡烛</span>
       <span class="tip">按住空格连吹</span>
       <button class="tip" id="micBtn">🎤 对着麦克风吹气</button>
@@ -426,7 +609,7 @@
     <p>蜡烛吹灭的那一刻，<br>所有愿望都开始生效了。</p>
     <p>愿你想要的都拥有，<br>得不到的都释怀。</p>
     <p class="sign">—— 来自一直在的人</p>
-    <button class="again" onclick="location.reload()">再来一次</button>
+    <button class="again" onclick="restartToDay()">再来一次</button>
   </div>
 </div>
 
@@ -459,7 +642,7 @@ function typeInto(el, text, speed = 62){
 }
 
 /* =========================================================
-   音效（Web Audio 合成）
+   音效
    ========================================================= */
 let audioCtx = null;
 
@@ -524,7 +707,6 @@ function playUnlockSound(){
   const ac = getAC(); if (!ac) return;
   try{
     const t = ac.currentTime;
-
     for (let i = 0; i < 3; i++){
       const o = ac.createOscillator(), g = ac.createGain();
       o.type = 'square';
@@ -535,7 +717,6 @@ function playUnlockSound(){
       o.connect(g); g.connect(ac.destination);
       o.start(tt); o.stop(tt + 0.06);
     }
-
     const o2 = ac.createOscillator(), g2 = ac.createGain();
     o2.type = 'sine';
     o2.frequency.setValueAtTime(420, t + 0.3);
@@ -545,6 +726,40 @@ function playUnlockSound(){
     g2.gain.exponentialRampToValueAtTime(0.0001, t + 1.15);
     o2.connect(g2); g2.connect(ac.destination);
     o2.start(t + 0.3); o2.stop(t + 1.2);
+  }catch(e){}
+}
+
+function playPickSound(){
+  const ac = getAC(); if (!ac) return;
+  try{
+    const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(660, t);
+    o.frequency.exponentialRampToValueAtTime(1320, t + 0.16);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.14, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + 0.34);
+  }catch(e){}
+}
+
+function playNightSound(){
+  const ac = getAC(); if (!ac) return;
+  try{
+    const t = ac.currentTime;
+    [392, 523.25, 659.25].forEach((f, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const tt = t + i * 0.06;
+      g.gain.setValueAtTime(0.0001, tt);
+      g.gain.exponentialRampToValueAtTime(0.07, tt + 0.09);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + 1.25);
+      o.connect(g); g.connect(ac.destination);
+      o.start(tt); o.stop(tt + 1.3);
+    });
   }catch(e){}
 }
 
@@ -561,9 +776,9 @@ const lockHint    = document.getElementById('lockHint');
 const granted     = document.getElementById('granted');
 const grantedText = document.getElementById('grantedText');
 
-let SIZE = 0;          // canvas CSS 尺寸
-let btnR = 40;         // 中心按钮半径（CSS px）
-let rotation = 0;      // 转盘旋转角度（度）
+let SIZE = 0;
+let btnR = 40;
+let rotation = 0;
 let dragging = false;
 let lastAngle = 0;
 let lastDigit = null;
@@ -571,11 +786,10 @@ let animToken = 0;
 let centerPressed = false;
 
 let entered = [];
-let locked = false;    // 验证中 / 解锁中锁定输入
+let locked = false;
 let hintIdx = 0;
-let unlocked = false;  // 是否已进入主页面（用于空格守卫）
+let unlocked = false;
 
-/* ---------- 6 个 LED ---------- */
 for (let i = 0; i < 6; i++){
   const d = document.createElement('div');
   d.className = 'led';
@@ -595,7 +809,6 @@ function updateLEDs(){
   });
 }
 
-/* ---------- 当前指向的数字 ---------- */
 function currentDigit(){
   return ((Math.round(-rotation / 36) % 10) + 10) % 10;
 }
@@ -609,7 +822,6 @@ function checkTick(){
   }
 }
 
-/* ---------- 尺寸 ---------- */
 function sizeDial(){
   const cssSize = Math.min(340, Math.max(240, window.innerWidth * 0.78));
   SIZE = cssSize;
@@ -624,7 +836,6 @@ function sizeDial(){
   drawDial();
 }
 
-/* ---------- 绘制 ---------- */
 function drawDial(){
   if (!SIZE) return;
 
@@ -636,12 +847,10 @@ function drawDial(){
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  /* ===== 旋转层 ===== */
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(rotation * Math.PI / 180);
 
-  // 金属外环
   const ringG = ctx.createLinearGradient(-R, -R, R, R);
   ringG.addColorStop(0,    '#453b74');
   ringG.addColorStop(0.35, '#221c3e');
@@ -654,7 +863,6 @@ function drawDial(){
   ctx.strokeStyle = 'rgba(190,170,255,.22)';
   ctx.lineWidth = 1.5; ctx.stroke();
 
-  // 刻度
   for (let deg = 0; deg < 360; deg += 3.6){
     const major = Math.abs(deg % 36) < 0.01;
     const a  = (deg - 90) * Math.PI / 180;
@@ -669,7 +877,6 @@ function drawDial(){
     ctx.stroke();
   }
 
-  // 数字
   const activeDigit = currentDigit();
   for (let i = 0; i < 10; i++){
     const a = (i * 36 - 90) * Math.PI / 180;
@@ -692,7 +899,6 @@ function drawDial(){
     ctx.restore();
   }
 
-  // 内盘
   const innerR = R - 74;
   const inG = ctx.createRadialGradient(0, -innerR * 0.45, innerR * 0.08, 0, 0, innerR);
   inG.addColorStop(0,    '#322b5e');
@@ -704,9 +910,7 @@ function drawDial(){
   ctx.lineWidth = 1; ctx.stroke();
 
   ctx.restore();
-  /* ===== 旋转层结束 ===== */
 
-  // 指针
   ctx.beginPath();
   ctx.moveTo(cx, 17);
   ctx.lineTo(cx - 9, 1);
@@ -718,7 +922,6 @@ function drawDial(){
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  // 中心确认按钮
   btnR = R * 0.30;
   const bg = ctx.createRadialGradient(
     cx, cy - btnR * 0.35, btnR * 0.15,
@@ -742,7 +945,6 @@ function drawDial(){
   ctx.fillText('ENTER', cx, cy + SIZE * 0.05);
 }
 
-/* ---------- 旋转动画 ---------- */
 function animateRotation(target, dur, onDone){
   const my = ++animToken;
   const start = rotation;
@@ -767,7 +969,6 @@ function animateRotation(target, dur, onDone){
   requestAnimationFrame(step);
 }
 
-/* ---------- 拖动 ---------- */
 function pointerPos(e){
   const r = dial.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -776,13 +977,12 @@ function pointerPos(e){
 dial.addEventListener('pointerdown', e => {
   if (locked) return;
   e.preventDefault();
-  getAC();                                   // 用户手势内激活音频
+  getAC();
 
   const p  = pointerPos(e);
   const dx = p.x - SIZE / 2;
   const dy = p.y - SIZE / 2;
 
-  // 点在中心按钮 → 确认
   if (Math.hypot(dx, dy) < btnR){
     centerPressed = true;
     drawDial();
@@ -793,7 +993,7 @@ dial.addEventListener('pointerdown', e => {
 
   dragging  = true;
   lastAngle = Math.atan2(dy, dx) * 180 / Math.PI;
-  animToken++;                               // 取消进行中的吸附动画
+  animToken++;
   try { dial.setPointerCapture(e.pointerId); } catch(err){}
 });
 
@@ -823,7 +1023,6 @@ function endDrag(){
 dial.addEventListener('pointerup', endDrag);
 dial.addEventListener('pointercancel', endDrag);
 
-/* ---------- 确认一位 ---------- */
 function confirmDigit(){
   if (locked || entered.length >= 6) return;
 
@@ -838,7 +1037,6 @@ function confirmDigit(){
   }
 }
 
-/* ---------- 验证 ---------- */
 function verify(){
   if (entered.join('') === CONFIG.PASSWORD){
     unlock();
@@ -864,12 +1062,10 @@ function fail(){
   }, 950);
 }
 
-/* ---------- 解锁 ---------- */
 async function unlock(){
   unlocked = true;
   lockHint.textContent = '';
 
-  // 转盘飞转
   await new Promise(res => animateRotation(rotation + 1080, 900, res));
 
   playUnlockSound();
@@ -887,7 +1083,6 @@ async function unlock(){
   setTimeout(() => gateEl.remove(), 1100);
 }
 
-/* ---------- 初始化 ---------- */
 sizeDial();
 lastDigit = currentDigit();
 digitDisplay.textContent = lastDigit;
@@ -962,6 +1157,20 @@ sizeStars();
 starLoop();
 
 /* =========================================================
+   游戏状态
+   ========================================================= */
+const mainEl      = document.getElementById('main');
+const skyBg       = document.getElementById('skyBg');
+const cloudLayer  = document.getElementById('cloudLayer');
+const tipsEl      = document.querySelector('.tips');
+const cakeEl      = document.querySelector('.cake');
+const tierBottom  = document.querySelector('.tier-bottom');
+const collectibles = Array.from(document.querySelectorAll('.collectible'));
+
+let gameDone = false;
+let caughtCount = 0;
+
+/* =========================================================
    蜡烛生成
    ========================================================= */
 const CANDLE_COUNT = 5;
@@ -970,7 +1179,7 @@ const candleRow = document.querySelector('.candles');
 
 for (let i = 0; i < CANDLE_COUNT; i++){
   const c = document.createElement('div');
-  c.className = 'candle';
+  c.className = 'candle no-flame';
 
   const stick = document.createElement('div');
   stick.className = 'stick';
@@ -993,6 +1202,7 @@ let outCount = 0;
 let allOut   = false;
 
 function blowOut(el){
+  if (!gameDone) return;
   if (!el || el.classList.contains('out')) return;
   el.classList.add('out');
   outCount++;
@@ -1008,18 +1218,16 @@ function blowNext(){
   else { clearInterval(spaceTimer); spaceTimer = null; }
 }
 
-/* 方式 1：鼠标 / 触摸 */
 candles.forEach(c => {
   c.addEventListener('pointerenter', () => blowOut(c));
   c.addEventListener('click', e => { e.stopPropagation(); blowOut(c); });
 });
 
-/* 方式 2：按住空格（未解锁时不响应） */
 let spaceTimer = null;
 
 window.addEventListener('keydown', e => {
   if (e.code !== 'Space') return;
-  if (!unlocked) return;
+  if (!unlocked || !gameDone) return;
   e.preventDefault();
   if (spaceTimer || allOut) return;
 
@@ -1033,10 +1241,24 @@ window.addEventListener('keyup', e => {
   spaceTimer = null;
 });
 
-/* 方式 3：麦克风吹气 */
+/* =========================================================
+   麦克风吹气
+   ========================================================= */
 const micBtn = document.getElementById('micBtn');
 let micStream = null;
 let micCooldown = 0;
+let micListening = false;
+
+function stopMic(){
+  micListening = false;
+  if (micStream){
+    try { micStream.getTracks().forEach(t => t.stop()); } catch(e){}
+    micStream = null;
+  }
+  micBtn.classList.remove('active');
+  micBtn.textContent = '🎤 对着麦克风吹气';
+  micBtn.disabled = false;
+}
 
 micBtn.addEventListener('click', async () => {
   if (micStream) return;
@@ -1066,11 +1288,14 @@ micBtn.addEventListener('click', async () => {
 
     micBtn.classList.add('active');
     micBtn.textContent = '🎤 正在听… 吹气！';
+    micListening = true;
 
     let baseNoise = 0.012;
     let frames = 0;
 
     (function listen(){
+      if (!micListening) return;
+
       analyser.getByteTimeDomainData(buf);
       let sum = 0;
       for (let i = 0; i < buf.length; i++){
@@ -1099,6 +1324,115 @@ micBtn.addEventListener('click', async () => {
     micBtn.disabled = true;
   }
 });
+
+/* =========================================================
+   白昼小游戏：收集 2、7、Haley
+   ========================================================= */
+function initCollectible(el){
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    if (gameDone || el.classList.contains('caught')) return;
+    catchCollectible(el);
+  });
+}
+collectibles.forEach(initCollectible);
+
+/* 计算落点：数字坐在下层顶部，Haley 落在下层正中间 */
+function getTarget(el){
+  const cakeRect = cakeEl.getBoundingClientRect();
+  const tbRect   = tierBottom.getBoundingClientRect();
+  const centerX  = cakeRect.left + cakeRect.width / 2;
+  const isWord   = el.classList.contains('word');
+  const scale    = isWord ? 0.52 : 0.44;
+  const h        = el.offsetHeight;
+
+  let x, y;
+  if (isWord){
+    x = centerX;
+    y = tbRect.top + tbRect.height / 2;
+  } else {
+    const offset = el.dataset.num === '2' ? -64 : 64;
+    x = centerX + offset;
+    y = tbRect.top - (h * scale) / 2 + 4;
+  }
+  return { x, y, scale };
+}
+
+function catchCollectible(el){
+  if (el.classList.contains('caught')) return;
+
+  // 1) 先读取漂移/旋转中的真实视觉位置
+  const rect = el.getBoundingClientRect();
+  const cx0  = rect.left + rect.width / 2;
+  const cy0  = rect.top + rect.height / 2;
+
+  // 2) 停止漂移与摇摆
+  el.classList.add('caught');
+  el.style.pointerEvents = 'none';
+
+  const span = el.querySelector('span');
+  if (span) span.style.animation = 'none';
+
+  // 3) 冻结在刚才的视觉位置（同一帧内完成，不会看到跳变）
+  el.style.transition = 'none';
+  el.style.left = cx0 + 'px';
+  el.style.top  = cy0 + 'px';
+  el.style.transform = 'translate(-50%, -50%) scale(1)';
+  void el.offsetWidth;
+
+  // 4) 下一帧飞向蛋糕
+  const t = getTarget(el);
+  el.style.transition = '';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.left = t.x + 'px';
+      el.style.top  = t.y + 'px';
+      el.style.transform = `translate(-50%, -50%) scale(${t.scale})`;
+    });
+  });
+
+  playPickSound();
+
+  caughtCount++;
+  if (caughtCount >= collectibles.length){
+    setTimeout(enterNight, 1050);
+  }
+}
+
+/* 收集齐后：入夜、点亮火苗、显示吹蜡烛选项；收集元素样式不变 */
+function enterNight(){
+  if (gameDone) return;
+  gameDone = true;
+
+  skyBg.classList.add('gone');
+  cloudLayer.classList.add('gone');
+
+  candles.forEach((c, i) => {
+    setTimeout(() => c.classList.remove('no-flame'), i * 130);
+  });
+
+  tipsEl.classList.remove('game-hidden');
+  tipsEl.classList.add('reveal');
+
+  mainEl.classList.remove('locked-scroll');
+  mainEl.classList.remove('day');
+
+  playNightSound();
+}
+
+/* 窗口变化时重新对齐已落座的收集元素 */
+function repositionLanded(){
+  if (!gameDone) return;
+  document.querySelectorAll('.collectible.caught').forEach(el => {
+    const t = getTarget(el);
+    el.style.transition = 'none';
+    el.style.left = t.x + 'px';
+    el.style.top  = t.y + 'px';
+    el.style.transform = `translate(-50%, -50%) scale(${t.scale})`;
+    void el.offsetWidth;
+    el.style.transition = '';
+  });
+}
 
 /* =========================================================
    撒花
@@ -1198,6 +1532,51 @@ function celebrate(){
 }
 
 /* =========================================================
+   “再来一次”：回到白昼天空
+   ========================================================= */
+function restartToDay(){
+  finalEl.classList.remove('show');
+
+  pieces = [];
+  fctx.clearRect(0, 0, FW, FH);
+  fxRunning = false;
+
+  candles.forEach(c => {
+    c.classList.remove('out');
+    c.classList.add('no-flame');
+  });
+  outCount = 0;
+  allOut = false;
+  clearInterval(spaceTimer);
+  spaceTimer = null;
+
+  tipsEl.classList.add('game-hidden');
+  tipsEl.classList.remove('reveal');
+
+  skyBg.classList.remove('gone');
+  cloudLayer.classList.remove('gone');
+
+  mainEl.classList.add('day', 'locked-scroll');
+  mainEl.scrollTop = 0;
+
+  collectibles.forEach(el => {
+    el.classList.remove('caught');
+    el.style.left = '';
+    el.style.top = '';
+    el.style.transform = '';
+    el.style.transition = '';
+    el.style.pointerEvents = '';
+    const span = el.querySelector('span');
+    if (span) span.style.animation = '';
+  });
+
+  caughtCount = 0;
+  gameDone = false;
+
+  stopMic();
+}
+
+/* =========================================================
    自适应
    ========================================================= */
 let resizeTimer = null;
@@ -1207,10 +1586,16 @@ window.addEventListener('resize', () => {
     sizeStars();
     sizeFx();
     sizeDial();
+    repositionLanded();
   }, 180);
 });
 window.addEventListener('orientationchange', () => {
-  setTimeout(() => { sizeStars(); sizeFx(); sizeDial(); }, 320);
+  setTimeout(() => {
+    sizeStars();
+    sizeFx();
+    sizeDial();
+    repositionLanded();
+  }, 320);
 });
 </script>
 </body>
