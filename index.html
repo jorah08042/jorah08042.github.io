@@ -1351,7 +1351,7 @@ function getTarget(el){
     x = centerX;
     y = tbRect.top + tbRect.height / 2;
   } else {
-    const offset = el.dataset.num === '2' ? -64 : 64;
+    const offset = el.dataset.num === '2' ? -32 : 32;
     x = centerX + offset;
     y = tbRect.top - (h * scale) / 2 + 4;
   }
