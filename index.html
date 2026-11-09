@@ -196,7 +196,6 @@
     user-select:none;
     -webkit-user-select:none;
 
-    /* 与 Happy Birthday 标题一致的白昼渐变（始终不变） */
     background:linear-gradient(90deg,#7c5cff,#ff6fb5,#4fa8ff,#7c5cff);
     background-size:300% 100%;
     -webkit-background-clip:text;
@@ -205,7 +204,6 @@
     color:transparent;
     text-shadow:0 4px 18px rgba(110,80,200,.22);
 
-    /* 居中定位用 transform，漂移与摇摆用 translate / rotate 属性 */
     transform:translate(-50%,-50%) scale(1);
 
     animation:
@@ -231,7 +229,6 @@
     animation:numFloat 5.6s ease-in-out infinite;
   }
 
-  /* 初始位置：分散飘浮在蛋糕两侧的天空中，避开标题 */
   #num2{ left:17%; top:46%; animation-duration:7s, 26s, 13s; }
   #num7{ left:83%; top:52%; animation-duration:7s, 31s, 17s; animation-delay:0s, -8s, -4s; }
   #wordHaley{ left:50%; top:72%; animation-duration:7s, 23s, 11s; animation-delay:0s, -14s, -2s; }
@@ -242,7 +239,6 @@
 
   @keyframes shimmer{ to{ background-position:300% 0; } }
 
-  /* 大范围缓慢漂移，像云一样四处游走 */
   @keyframes wander{
     0%   { translate: 0px 0px; }
     25%  { translate: -52px -20px; }
@@ -250,7 +246,6 @@
     75%  { translate: -22px -28px; }
     100% { translate: 0px 0px; }
   }
-  /* 轻微摇摆旋转 */
   @keyframes sway{
     0%,100% { rotate: -7deg; }
     50%     { rotate: 8deg; }
@@ -261,7 +256,6 @@
     65%{ transform:translate(-10px,8px) rotate(-2deg); }
   }
 
-  /* 已收集：保留渐变流光，但停止漂移与旋转 */
   .collectible.caught{
     cursor:default;
     animation:shimmer 7s linear infinite;
@@ -285,7 +279,7 @@
     margin:0 0 10px;
     font-size:12px; letter-spacing:.34em; text-transform:uppercase;
     color:#a495d8; opacity:.9;
-    transition:color .8s ease;
+    transition:color .8s ease, opacity .9s ease;
   }
 
   h1{
@@ -298,9 +292,9 @@
     color:transparent;
     filter:drop-shadow(0 0 26px rgba(190,140,255,.45));
     animation:shimmer 7s linear infinite;
+    transition:opacity .9s ease, filter .9s ease;
   }
 
-  /* 白昼标题配色 */
   #main.day h1{
     background:linear-gradient(90deg,#7c5cff,#ff6fb5,#4fa8ff,#7c5cff);
     background-size:300% 100%;
@@ -309,6 +303,13 @@
     filter:drop-shadow(0 3px 14px rgba(120,90,220,.22));
   }
   #main.day .sub{color:#7e6fb0;}
+
+  /* 白昼隐藏标题，入夜淡入 */
+  #main.day .sub,
+  #main.day h1{
+    opacity:0 !important;
+    visibility:hidden;
+  }
 
   @keyframes rise{
     from{opacity:0; transform:translateY(20px);}
@@ -555,10 +556,8 @@
 
 <!-- ================= 二、主页面 ================= -->
 <main id="main" class="day locked-scroll">
-  <!-- 白昼天空 -->
   <div id="skyBg"></div>
 
-  <!-- 云层：数量更多、尺寸更大，覆盖在可收集元素前面 -->
   <div id="cloudLayer" aria-hidden="true">
     <div class="cloud" style="top:4%;  --s:1.6; animation-duration:74s;  animation-delay:-18s; opacity:.95;"></div>
     <div class="cloud" style="top:13%; --s:1.1; animation-duration:58s;  animation-delay:-44s; opacity:.85;"></div>
@@ -574,7 +573,6 @@
     <div class="cloud" style="top:47%; --s:2.0; animation-duration:100s; animation-delay:-82s; opacity:.55;"></div>
   </div>
 
-  <!-- 需要收集：数字 2、7 和单词 Haley（始终白昼样式） -->
   <div class="collectible num" id="num2" data-num="2"><span>2</span></div>
   <div class="collectible num" id="num7" data-num="7"><span>7</span></div>
   <div class="collectible word" id="wordHaley" data-word="Haley"><span>Haley</span></div>
@@ -1337,13 +1335,15 @@ function initCollectible(el){
 }
 collectibles.forEach(initCollectible);
 
-/* 计算落点：数字坐在下层顶部，Haley 落在下层正中间 */
+/* 计算落点：数字坐在下层顶部，Haley 落在下层正中间
+   入夜后（gameDone）落座缩放放大 1.38 倍 */
 function getTarget(el){
   const cakeRect = cakeEl.getBoundingClientRect();
   const tbRect   = tierBottom.getBoundingClientRect();
   const centerX  = cakeRect.left + cakeRect.width / 2;
   const isWord   = el.classList.contains('word');
-  const scale    = isWord ? 0.52 : 0.44;
+  const base     = isWord ? 0.52 : 0.44;
+  const scale    = gameDone ? base * 1.38 : base;
   const h        = el.offsetHeight;
 
   let x, y;
@@ -1361,26 +1361,22 @@ function getTarget(el){
 function catchCollectible(el){
   if (el.classList.contains('caught')) return;
 
-  // 1) 先读取漂移/旋转中的真实视觉位置
   const rect = el.getBoundingClientRect();
   const cx0  = rect.left + rect.width / 2;
   const cy0  = rect.top + rect.height / 2;
 
-  // 2) 停止漂移与摇摆
   el.classList.add('caught');
   el.style.pointerEvents = 'none';
 
   const span = el.querySelector('span');
   if (span) span.style.animation = 'none';
 
-  // 3) 冻结在刚才的视觉位置（同一帧内完成，不会看到跳变）
   el.style.transition = 'none';
   el.style.left = cx0 + 'px';
   el.style.top  = cy0 + 'px';
   el.style.transform = 'translate(-50%, -50%) scale(1)';
   void el.offsetWidth;
 
-  // 4) 下一帧飞向蛋糕
   const t = getTarget(el);
   el.style.transition = '';
   requestAnimationFrame(() => {
@@ -1399,7 +1395,7 @@ function catchCollectible(el){
   }
 }
 
-/* 收集齐后：入夜、点亮火苗、显示吹蜡烛选项；收集元素样式不变 */
+/* 收集齐后：入夜、点亮火苗、显示吹蜡烛选项、放大落座元素 */
 function enterNight(){
   if (gameDone) return;
   gameDone = true;
@@ -1415,7 +1411,19 @@ function enterNight(){
   tipsEl.classList.add('reveal');
 
   mainEl.classList.remove('locked-scroll');
-  mainEl.classList.remove('day');
+  mainEl.classList.remove('day');   // 移除 day → 标题淡入
+
+  // 入夜后放大已落座的数字与单词（带平滑过渡）
+  document.querySelectorAll('.collectible.caught').forEach(el => {
+    const t = getTarget(el);
+    el.style.transition =
+      'left .8s cubic-bezier(.33,0,.2,1), ' +
+      'top .8s cubic-bezier(.33,0,.2,1), ' +
+      'transform .8s cubic-bezier(.33,0,.2,1)';
+    el.style.left = t.x + 'px';
+    el.style.top  = t.y + 'px';
+    el.style.transform = `translate(-50%, -50%) scale(${t.scale})`;
+  });
 
   playNightSound();
 }
